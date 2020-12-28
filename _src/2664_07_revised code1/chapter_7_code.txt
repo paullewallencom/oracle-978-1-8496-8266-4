@@ -1,0 +1,143 @@
+Chapter 7 code:
+============
+./rman target /
+
+RMAN> show all;
+
+RMAN> BACKUP SECTION SIZE 250M DATAFILE 1; 
+
+RMAN> DUPLICATE TARGET DATABASE 
+				TO dupracdb
+			FROM ACTIVE DATABASE
+			SPFILE
+			NOFILENAMECHECK;
+
+RMAN> DUPLICATE DATABASE to dupracdb
+--UNTIL TIME "TO_DATE('specify the date and required timehere')"
+--UNTIL TIME "TO_DATE('01-MAR-2011','DD/MON/YYYY')"
+SPFILE
+BACKUP LOCATION ‘existing backup location’
+NOFILENAMECHECK;
+
+
+RMAN> CONFIGURE ARCHIVELOG DELETION POLICY TO BACKED UP 2 TIMES TO DISK;
+
+
+RMAN> CONFIGURE ARCHIVELOG DELETION POLICY TO APPLIED ON STANDBY;
+
+SQL> ALTER DATABASE SET DB_RECOVERY_FILE_DEST_SIZE=10G scope=both;
+
+SQL> ALTER DATABASE SET DB_RECOVERY_FILE_DEST = ‘DG_FRA’ scope=both;
+
+RMAN> RUN
+		{
+ ALLOCATE CHANNEL ch01 DEVICE TYPE DISK FORMAT ‘racdb_level0_%U.bak’;
+		 BACKUP INCREMENTAL LEVEL 0 DATABASE PLUS ARCHIVELOG;
+		 RELEASE CHANNEL ch01;
+
+
+
+RMAN> list backup of database;
+
+RMAN> RUN
+		{
+ ALLOCATE CHANNEL ch01 DEVICE TYPE DISK FORMAT ‘racdb_level0_%U.bak’;
+		 BACKUP INCREMENTAL LEVEL 1 CUMULATIVE DATABASE;
+		 RELEASE CHANNEL ch01;
+		}
+
+
+
+RMAN> CONFIGURE DEVICE TYPE disk/sbt PARALLELISM 2;
+	RMAN> CONFIGURE CHANNEL ch1 CONNECT ‘user/password@racdb1’;
+	RMAN> CONFIGURE CHANNEL ch2 CONNECT ‘user/password@racdb2’;
+
+
+
+RMAN> RUN {
+ALLOCATE CHANNEL ch1 CONNECT 'user/password@racdb1';
+ALLOCATE CHANNEL ch2 CONNECT 'user/password@racdb2';
+}
+
+./$ORA_GRID_HOME/bin/ocrconfig -add /dev/sdf1 --new_location_path
+./ocrconfig -add +OCRVOTE
+./$ORA_GRID_HOME/bin/crsctl add css votedisk /dev/sdg1 --new_location_path
+
+
+./$ORA_GRID_HOME/bin/ocrconfig -showbackup
+
+./ocrcheck
+
+
+more /etc/oracle/ocr.loc 
+./$ORA_GRID_HOME/bin/ocrconfig –backuploc <new_location_details>
+
+
+./ocrconfig -manualbackup <directory_name>
+
+dd if=voting_disk_name of=backup_file_name
+
+./ocrconfig -showbackup
+
+./crsctl stop crs (repeat the command on all nodes in 11gR1)
+
+./crsctl stop cluster -all (just from the first node)  
+./crsctl stop crs (repeat the command on all nodes in 11gR2)
+
+./ocrconfig -restore <backup_copy_location_filename>
+
+./crsctl start crs
+
+./ocrcheck
+./cluvfy comp ocr -n all -verbose
+
+./ocrconfig -showbackup
+
+./crsctl stop crs (use -f flag if you have any issues 
+  stopping the cluster stack)
+
+./crsctl start crs -excl
+
+export ORACLE_SID=+ASM1 -- assuming it is on the first node
+export ORACLE_HOME=$ORA_GRID_HOME -- set gird home
+
+sqlplus / as sysasm
+SQL> CREATE DISKGROUP data EXTERNAL REDUNDANCY 
+		DISK '/dev/diskname1'
+		ATTRIBUTE 'COMPATIBLE.ASM'='11.2';
+
+./ocrconfig -restore 
+
+./crsctl start res ora.crsd -init
+./crsctl replace votedisk +DATA
+
+./crsctl stop crs
+./crsctl start crs (repeat this command on all nodes)
+
+./ocrcheck
+./cluvfy comp ocr -n all -verbose
+
+dd if=<backup_file_path_name> of=<voting_disk_path>
+
+./crsctl start crs -excl
+
+./crsctl replace voting disk +DISKGROP_NAME
+
+./crsctl query css votedisk
+Note down the File Universal Id (FUID) of the voting disk
+
+./crsctl delete css votedisk <FUID>
+./crsctl add css votedisk <destination_for_votedisk>
+
+
+./crsctl stop crs -f
+./crsctl start crs
+
+
+
+
+
+
+
+
+

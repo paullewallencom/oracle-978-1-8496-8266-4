@@ -1,0 +1,158 @@
+-- chapter 11 code depot
+-- Linux/UNIX commands
+-- Execute these at UNIX/LINUX shell prompt
+cd 6078836
+mv /usr/lib/libdb.so.2 /usr/lib/libdb.so.2.6078836 
+cp libdb.so.2 /usr/lib
+
+
+-- sqlplus commands for adstats.sql section
+sqlplus "/ as sysdba" 
+shutdown normal; 
+startup restrict; 
+@adstats.sql
+shutdown normal;
+startup;
+exit;
+
+convert.xml sample file
+
+<?xml version="1.0" encoding="UTF-8" ?>
+- <n:RConfigxmlns:n="http://www.oracle.com/rconfig" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.oracle.com/rconfig">
+- <n:ConvertToRAC>
+- <!--
+Verify does a precheck to ensure all pre-requisites are met, before the conversion is attempted. Allowable values are: YES|NO|ONLY
+-->
+- <n:Convert verify="ONLY">
+- <!--
+Specify current OracleHome of non-rac database for SourceDBHome
+-->
+<n:SourceDBHome>/u01/oracle/VIS/db/tech_st/11.1.0</n:SourceDBHome>
+- <!--
+Specify OracleHome where the rac database should be configured. It can be same as SourceDBHome
+-->
+<n:TargetDBHome>/u01/app/oracle/product/11.1.0/db_2</n:TargetDBHome>
+- <!--
+Specify SID of non-rac database and credential. User with sysdba role is required to perform conversion
+-->
+- <n:SourceDBInfo SID="VIS">
+- <n:Credentials>
+<n:User>sys</n:User>
+<n:Password>sys1</n:Password>
+<n:Role>sysdba</n:Role>
+</n:Credentials>
+</n:SourceDBInfo>
+- <!--
+ASMInfo element is required only if the current non-rac database uses
+ASM Storage
+-->
+- <n:ASMInfo SID="+ASM1">
+- <n:Credentials>
+<n:User>sys</n:User>
+<n:Password>sys1</n:Password>
+<n:Role>sysasm</n:Role>
+ 
+
+</n:Credentials>
+</n:ASMInfo>
+- <!--
+Specify the list of nodes that should have rac instances running. LocalNode should be the first node in this nodelist.
+-->
+- <n:NodeList>
+<n:Node name="raclinux1.gj.com" />
+<n:Node name="raclinux2.gj.com" />
+</n:NodeList>
+- <!--
+Specify prefix for rac instances. It can be same as the instance name for non-rac database or different. The instance number will be attached to this prefix.
+-->
+<n:InstancePrefix>VIS</n:InstancePrefix>
+- <!--
+Specify port for the listener to be configured for rac database. If port="", alistener existing on localhost will be used for rac database.The listener will be extended to all nodes in the nodelist
+-->
+<n:Listener port="" />
+- <!--
+Specify the type of storage to be used by rac database. Allowable values are CFS|ASM. The non-rac database should have same storage type.
+-->
+- <n:SharedStorage type="ASM">
+- <!--
+Specify Database Area Location to be configured for rac database. If this field is left empty, current storage will be used for rac database. For CFS, this field will have directory path.
+-->
+<n:TargetDatabaseArea>+DATA</n:TargetDatabaseArea>
+- <!--
+Specify Flash Recovery Area to be configured for rac database. If this field is left empty, current recovery area of non-rac database will be configured for rac database. If current database is not using recovery Area, the resulting rac database will not have a recovery area.
+-->
+<n:TargetFlashRecoveryArea>+FLASH</n:TargetFlashRecoveryArea>
+</n:SharedStorage>
+</n:Convert>
+</n:ConvertToRAC>
+</n:RConfig>
+ 
+
+
+SQL>startup pfile=<OLD_ORACLE_HOME>/dbs/init<ORACLE_SID>.ora;.
+
+
+SQL>create spfile from pfile
+
+perl <AD_TOP>/bin/admkappsutil.pl
+
+cd <RDBMS ORACLE_HOME>
+unzip -o appsutil.zip
+
+cd <RDBMS ORACLE_HOME>
+. <CONTEXT_NAME>.env
+cd <RDBMS 11g ORACLE_HOME>/appsutil/bin
+perl adbldxml.pl tier=db appsuser=<APPSuser>
+
+
+
+cd <RDBMS ORACLE_HOME>
+/appsutil/bin/perl adconfig.pl
+
+
+sqlplus / as sysdba;
+SQL> show parameters control_files
+
+
+sqlplus / as sysdba;
+SQL> show parameters control_files
+
+SQL>create spfile=<temp location> from pfile.
+SQL>create pfile=/tmp/init<ins1>.ora from spfile=<temp location>.
+
+
+SQL>create spfile=<shared location> from pfile;
+
+# srvctl setenv nodeapps -n <node> \
+-t TNS_ADMIN=<Full Path of ORACLE HOME>/network/admin/<context_
+directory>
+
+# srvctl remove listener –n <nodename> -l <listener_name>
+# srvctl add listener -n <nodename> -o <oracle_home> -l
+<listener_name>
+
+$AD_TOP/bin/adconfig.sh contextfile=$INST_TOP/appl/
+admin/<context_file>.
+
+$AD_TOP/bin/adconfig.sh contextfile=$INST_TOP/appl/admin/<context_file>
+
+
+--cloning scripts
+$ cd <RDBMS ORACLE_HOME>/appsutil/scripts/<CONTEXT_NAME>
+$ perl adpreclone.pl dbTier
+
+$ cd <INST_TOP>/admin/scripts
+$ perl adpreclone.pl appsTier
+
+
+$ cd <RDBMS ORACLE_HOME>/appsutil/clone/bin
+$ perl adcfgclone.pl dbTier
+
+$ cd <COMMON_TOP>/clone/bin
+$ perl adcfgclone.pl appsTier
+
+$ cd <COMMON_TOP>/clone/bin
+$ perl adaddnode.pl
+
+
+$INST_TOP/admin/scripts/adautocfg.sh

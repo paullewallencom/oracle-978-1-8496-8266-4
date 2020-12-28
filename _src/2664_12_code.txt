@@ -1,0 +1,66 @@
+-- chapter 12 code depot
+
+select capture_name,apply_name,apply_dblink,apply_messages_sent,apply_bytes_sent from v$streams_capture;
+
+select apply_name,proxy_sid,proxy_serial,proxy_spid,capture_bytes_received from v$streams_apply_reader;
+
+-- tnsnames.ora file 
+
+racdb.mycompany.com=
+(description=
+(load_balance=on)
+(address=(protocol=tcp)(host=raclinux1-vip)(port=1521))
+(address=(protocol=tcp)(host=raclinux2-vip)(port=1521))
+(connect_data=
+(service_name=racdb.mycompany.com)))
+
+racdb1.mycompany.com=
+(description=(address=(protocol=tcp)(host=raclinux1-vip)(port=1521))
+(connect_data=
+(service_name=racdb.mycompany.com)
+(instance_name=raclinux1)))
+
+racdb2.mycompany.com=
+(description=(address=(protocol=tcp)(host=raclinux2-vip)(port=1521))
+(connect_data=(service_name=racdb.mycompany.com)
+(instance_name=raclinux2)))
+
+
+
+-- DBMS_PROPOGATION_ADM
+exec DBMS_PROPAGATION_ADM.stop_propagation('name_of_propagation'); 
+
+-- or
+exec DBMS_PROPAGATION_ADM.stop_propagation('name_of_propagation',force=>true);
+exec DBMS_PROPAGATION_ADM.start_propagation('name_of_propagation');
+
+-- code for DBMS_AQADM 
+DBMS_AQADM.UNSCHEDULE_PROPAGATION('source_queue_name','destination',destination_queue=>'specific_queue');
+
+DBMS_AQADM.SCHEDULE_PROPAGATION('source_queue_name','destination',destination_queue=>'specific_queue');
+
+DBMS_AQADM.ENABLE_PROPAGATION_SCHEDULE('source_queue_name','destination',destination_queue=>'specific_queue');
+
+DBMS_AQADM.DISABLE_PROPAGATION_SCHEDULE('source_queue_name','destination',destination_queue=>'specific_queue');
+
+DBMS_AQADM.ALTER_PROPAGATION_SCHEDULE('source_queue_name','destination',destination_queue=>'specific_queue');
+
+
+SELECT INSTANCE_NAME, HOST_NAME FROM GV$INSTANCE WHERE INST_ID <>(SELECT INSTANCE_NUMBER FROM V$INSTANCE);
+
+
+export ORACLE_SID=rac_stdby1
+export ORACLE_HOME=/u01/app/oracle/product/11.1.0/racdb
+rman target / catalog rcat/rcat@rcatdb
+
+
+RMAN
+RUN {
+SQL "alter tablespace users offline";
+RESTORE TABLESPACE users;
+}
+exit;
+sqlplus / as sysdba
+ALTER TABLESPACE users ONLINE;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE USING CURRENT LOGFILE DISCONNECT;
+

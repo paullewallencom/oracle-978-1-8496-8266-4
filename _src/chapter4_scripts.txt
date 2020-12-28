@@ -1,0 +1,245 @@
+SELECT path,header_status,total_mb 
+ FROM v$asm_disk WHERE header_status ORDER BY header_status;
+
+SELECT path,header_status,total_mb, 
+ FROM v$asm_disk WHERE header_status in (‘CANDIDATE’,’FORMER’,’PROVISIONED’);
+
+SELECT name,state,total_mb,usable_file_mb FROM v$asm_diskgroup;
+
+SELECT * FROM v$asm_operation;
+
+srvctl stop asm –n raclinux1 –o normal:immediate:transactional:abort
+
+    export ORACLE_SID=+ASM1
+    export ORACLE_HOME=$ASM_HOME (in 11gR1)
+    export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+sqlplus / as sysasm
+SQL> SHUTDOWN NORMAL:IMMEDIATE:TRANSACTIONAL:ABORT
+
+
+srvctl start asm –n raclinux1 –o nomount:mount:restrict
+    export ORACLE_SID=+ASM1
+    export ORACLE_HOME=$ASM_HOME (in 11gR1)
+    export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+sqlplus / as sysasm
+SQL> STARTUP NOMOUNT:MOUNT:RESTRICT
+
+export ORACLE_SID=+ASM1
+export ORACLE_HOME=$ASM_HOME (in 11gR1)
+export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+SQL> SELECT path,header_status,mode_status,total_mb 
+	FROM v$asm_disk 
+	 WHERE header_status IN (‘CANDIDATE’,’FORMER’,’PROVISIONED’);
+
+CREATE DISKGROUP data EXTERNAL REDUNDANCY DISK ‘/dev/sde1’;
+
+CREATE DISKGROUP data NORMAL REDUNDANCY 
+ 	FAILGROUP fgp1 DISK ‘/dev/sde1’,
+ 	FAILGROUP fgp2 DISK ‘/dev/sdf1’;
+
+CREATE DISKGROUP data HIGH REDUNDANCY 
+ 	FAILGROUP fgp1 DISK ‘/dev/sde1’,
+ 	FAILGROUP fgp2 DISK ‘/dev/sdf1’,
+	FAILGROUP fgp3 DISK ‘/dev/sdg1’;
+
+ALTER DISKGROUP data ADD DISK ‘/dev/sdf1’;
+	ALTER DISKGROUP data ADD DISK ‘/dev/sdf1’,’/dev/sdg2’ 
+		REBALANCE POWER 3;
+
+
+export ORACLE_SID=+ASM1 – assuming that we are logging in first 
+			 ASM instance.
+export ORACLE_HOME=$ASM_HOME (in 11gR1)
+export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+SQL> SELECT disk_number,name FROM v$asm_disk WHERE group_number =
+	(SELECT group_number FROM v$asm_diskgroup WHERE NAME = ‘DATA’);
+
+ALTER DISKGROUP data DROP DISK ‘/dev/sdf1’;
+	ALTER DISKGROUP data DROP DISK ’DATA_0001’ 
+		REBALANCE POWER 3;
+
+ALTER DISKGROUP data UNDROP DISKS; 
+
+DROP DISKGROUP data; 
+	DROP DISKGROUP data FORCE; 
+
+	DROP DISKGROUP data INCLUDING CONTENTS; 
+
+
+export ORACLE_SID=+ASM1 – assuming that we are logging in first 
+			 ASM instance.
+export ORACLE_HOME=$ASM_HOME (in 11gR1)
+export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+asmcmd -p	-- connects to ASM instance in interactive mode includes
+			the current directory info.
+asmcmd		-- connects to ASM instance in interactive mode.	
+asmcmd -v	-- displays ASM version
+asmcmd -a sysasm	-- connects to ASM instance with SYSASM privilege.
+asmcmd <command> -- executes the command in noninteractive mode.
+
+
+asmcmd -p
+ASMCMD [+] > cd DATA
+
+ASMCMD [+DATA] > cd RACDB
+
+ASMCMD [+DATA/RACDB] cd DATAFILE
+
+
+ASMCMD [+] > lsct 
+ASMCMD [+] > lsdg 
+
+CREATE DISKGROUP data EXTERNAL REDUNDANCY DISK ‘/dev/sdb1’
+	ATTRIBUTE 'compatible.rdbms' = '11.1',
+	ATTRIBUTE ‘compatible.asm’ = ’11.1’,
+	ATTRIBUTE ‘disk_repair_time’ = ‘6h’;
+	
+ALTER DISKGROUP data SET ATTRIBUTE ‘compatible.rdbms’=’11.1’;
+ALTER DISKGROUP data SET ATTRIBUTE ‘compatible.asm’=’11.1’;
+ALTER DISKGROUP data SET ATTRIBUTE 'disk_repair_time' = '6h';
+
+
+export ORACLE_SID=+ASM1
+	export ORACLE_HOME=$ASM_HOME (in 11gR1)
+	export ORACLE_HOME=$ORA_GRID_HOME (in 11gR2)
+
+	sqlplus / as SYSASM
+
+	SQL> CREATE USER my_sysasm IDENTIFIED BY password123;
+	SQL> GRANT sysasm TO my_sysasm;
+
+
+ export ORACLE_SID=+ASM1
+export ORACLE_HOME=$ORA_GRID_HOME
+
+asmca -silent -createDiskGroup -diskGroupName DG_DATA
+		-disk ‘/dev/sdf1’
+		-redundancy EXTERNAL
+		-compatible.asm=’11.2’
+		-compatible.rdbms=’11.2’;
+
+
+ASMCMD [+] > volcreate -G DG_FLASH -s 1G
+
+ASMCMD [+] volinfo -G DG_FLASH advm_vg
+
+SQL> ALTER DISKGROUP dg_flash ADD VOLUME advm_vg SIZE 1G;
+
+SQL> ALTER DISKGROUP dg_flash RESIZE VOLUME advm_vg SIZE 2G;
+
+SQL> ALTER DISKGROUP dg_flash DISABLE VOLUME advm_vg;
+
+
+SQL> ALTER DISKGROUP dg_flash ENABLE VOLUME advm_vg
+
+
+SQL> ALTER DISKGROUP ALL DISABLE VOLUME ALL;
+
+SQL> ALTER DISKGROUP dg_flash DROP VOLUME advm_vg;
+
+SQL> SELECT volume_name,size_mb,state,usage,volume_device,mountpath
+      FROM v$asm_volume;
+
+
+SQL> SELECT volume_name,reads,writes,read_errs,bytes_read,bytes_written 
+      FROM v$asm_volume_stat;
+
+
+lsmod |grep oracle
+
+$GRID_HOME/bin/acfsload start -s
+
+$GRID_HOME/bin/asmcmd volcreate -G DG_FLASH -s 1g advm_vg2
+
+mkfs -t acfs -b 4k /dev/asm/advm_vg2-86
+
+mkdir -p /u01/app/oracle/acfsmounts/db_home
+chmod 775 -R /u01/app/oracle/acfsmounts/db_home
+chown -R oracle:oinstall /u01/app/oracle/acfsmounts/db_home
+
+/sbin/acfsutil registry -a -f -n raclinux1,raclinux2 /dev/
+  asm/advm_vg-86 /u01/app/oracle/acfsmounts/db_home
+
+acfsutil registry: mount point /u01/app/oracle/acfsmounts/
+
+
+/bin/mount -t acfs /dev/asm/advm_vg2-86 /u01/app/oracle/acfsmounts/db_home
+
+/sbin/acfsutil registry
+
+/sbin/acfsutil info fs
+
+/sbin/acfsutil registry -d /u01/app/oracle/acfsmounts/db_home
+
+/bin/umount /u01/app/app/acfsmounts/db_home
+
+/bin/umount /u01/app/oracle/acfsmounts/db_home
+
+asmcmd voldisable -G dg_flash advm_vg2-86
+
+
+SELECT fs_name,available_time,block_size,state FROM v$asm_filesystem;
+
+/sbin/acfsutil info fs
+
+echo "This is my file" > ashfaq.txt
+
+ls -ltr /u01/app/oracle/acfsmounts/db_home
+
+
+
+/sbin/acfsutil snap create acfs_snap1 /u01/app/oracle/acfsmounts/db_home
+
+select substr(fs_name,1,20) FS,vol_device device,substr
+  (snap_name,1,30) SNAP_NAME,create_time from v$asm_acfssnapshots
+
+/sbin/acfsutil snap delete acfs_snap1 /u01/app/oracle/acfsmounts/db_home
+
+
+ALTER DISKGROUP dg_data ADD TEMPLATE dbfile_hot ATTRIBUTES
+  (hot mirrorhot);
+
+ALTER DISKGROUP dg_data MODIFY FILE '+dg_data/RACDB/datafile/
+  users.2.58864'ATTRIBUTE (hot mirrorhot) /(cold mirrorcold);
+
+
+ASMCMD [+] > shutdown
+ASMCMD [+] > shutdown --immediate
+ASMCMD [+] > shutdown --abort
+ASMCMD> startup
+
+
+ASMCMD> spbackup /u01/app/oracle/product/11.2.0/dbs/
+  spfile+ASM.ora +DG_DATA/bakspfileASM.ora
+
+
+ASMCMD [+] > dropdg -r dg_data
+
+ASMCMD [+] > iostat -G dg_data
+
+ASMCMD [+] > iostat -G data_nw
+
+ASMCMD [+] > mount -f dg_data
+ASMCMD [+] > mount --restrict dg_data
+ASMCMD [+] > mount -a
+
+
+ASMCMD [+] > rebal --power 4 dg_data
+
+ASMCMD [+] > md_backup /tmp/asmbackups/datapbkps -G DATA 
+
+ASMCMD [+] > md_backup /tmp/asmbackups/alldgbkps
+
+ASMCMD [+] > md_restore --full –G data /tmp/asmbackups/databkps
+
+ASMCMD [+] > md_restore --nodg –G data /tmp/asmbackups/databkps
+
+ASMCMD [+] > md_restore --newdg -o 'data:data2' /tmp/asmbackups/databkps
+
+
+
